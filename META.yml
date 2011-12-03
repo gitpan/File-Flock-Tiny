@@ -23,10 +23,11 @@ no_index:
     - inc
     - t
 requires:
+  parent: 0
   perl: 5.8.0
 resources:
   bugtracker: http://github.com/trinitum/perl-File-Flock-Tiny/issues
   homepage: http://github.com/trinitum/perl-File-Flock-Tiny
   license: http://dev.perl.org/licenses/
   repository: git://github.com/trinitum/perl-File-Flock-Tiny
-version: 0.01
+version: 0.02
