@@ -13,7 +13,7 @@ File::Flock::Tiny - yet another flock package
 
 =cut
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 $VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
@@ -68,6 +68,24 @@ sub trylock {
     bless $fh, "File::Flock::Tiny::Lock";
     return unless flock $fh, LOCK_EX | LOCK_NB;
     return $fh;
+}
+
+=head2 File::Flock::Tiny->write_pid($file)
+
+Try to lock the file and save PID into it. Returns the lock object, or undef if
+file already locked.
+
+=cut
+
+sub write_pid {
+    my ( $class, $file ) = @_;
+    my $lock = $class->trylock($file);
+    if ($lock) {
+        $lock->truncate(0);
+        $lock->print("$$\n");
+        $lock->flush;
+    }
+    return $lock;
 }
 
 package File::Flock::Tiny::Lock;
