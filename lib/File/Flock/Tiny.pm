@@ -13,7 +13,7 @@ File::Flock::Tiny - yet another flock package
 
 =cut
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 $VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
@@ -44,10 +44,10 @@ sub _open_file {
 
 =head2 File::Flock::Tiny->lock($file)
 
-Acquire exclusive lock on file. I<$file> may be a file name or opened file
-handler. If filename given and file doesn't exist it will be created.
-Method returns lock object, file remains locked until this object
-will go out of the scope, or till you call I<release> method on it.
+Acquire exclusive lock on the file. I<$file> may be a file name or an opened
+file handler. If a filename given and the file doesn't exist it will be
+created.  The method returns a lock object, the file remains locked until this
+object goes out of the scope, or till you call I<release> method on it.
 
 =cut
 
@@ -59,7 +59,8 @@ sub lock {
 
 =head2 File::Flock::Tiny->trylock($file)
 
-Same as I<lock> but if I<$file> already locked immediately returns undef.
+Same as I<lock>, but if the I<$file> has been already locked, immediately
+returns undef.
 
 =cut
 
@@ -72,8 +73,11 @@ sub trylock {
 
 =head2 File::Flock::Tiny->write_pid($file)
 
-Try to lock the file and save PID into it. Returns the lock object, or undef if
-file already locked.
+Try to lock the file and save the process ID into it. Returns the lock object,
+or undef if the file was already locked. The lock returned by I<write_pid> will
+be automatically released when the object goes out of the scope in the process
+that locked the pid file, in child processes you can release the lock
+explicitely.
 
 =cut
 
@@ -84,6 +88,7 @@ sub write_pid {
         $lock->truncate(0);
         $lock->print("$$\n");
         $lock->flush;
+        *$lock->{destroy_only_in} = $$;
     }
     return $lock;
 }
@@ -107,15 +112,19 @@ sub release {
 }
 
 sub DESTROY {
-    shift->release;
+    my $lock = shift;
+    unless ( *$lock->{destroy_only_in} && *$lock->{destroy_only_in} != $$ ) {
+        $lock->release;
+    }
 }
 
 =head2 $lock->close
 
-Close locked filehandle, but do not release lock. Normally if you closed file
-it will be unlocked, but if you forked after locking file and closed lock in
-parent process, file will still be locked. Following example demonstrates the
-use for this method:
+Close the locked filehandle, but do not release the lock. Normally if you closed
+the file it will be unlocked, but if you forked after locking the file and when
+closed the lock in the parent process, the file will still be locked even after
+the lock went out of the scope in the parent process. The following example
+demonstrates the use for this method:
 
     {
         my $lock = File::Flock::Tiny->lock("lockfile");
@@ -126,13 +135,19 @@ use for this method:
         $lock->close;
     }
     # file still locked by child. Without $lock->close,
-    # it would be unlocked by parent when $lock got out
+    # it would be unlocked by parent when $lock went out
     # of the scope
 
 Note, that this behaviour is not portable! It works on Linux and BSD, but on
-Solaris locks are not inherited by child processes, so file will be unlocked as
-soon as parent process will close it. See also description of flock in
-L<perlfunc>.
+Solaris locks are not inherited by child processes, so the file will be
+unlocked as soon as the parent process will close it. See also description of
+flock in L<perlfunc>.
+
+=cut
+
+1;
+
+__END__
 
 =head1 AUTHOR
 
@@ -152,7 +167,7 @@ don't like any of them.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2011 Pavel Shaydo.
+Copyright 2011, 2012 Pavel Shaydo.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published
@@ -162,5 +177,3 @@ See http://dev.perl.org/licenses/ for more information.
 
 
 =cut
-
-1;
