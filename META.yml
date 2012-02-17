@@ -5,7 +5,7 @@ author:
   - 'Pavel Shaydo <zwon@cpan.org>'
 build_requires:
   ExtUtils::MakeMaker: 6.62
-  File::Slurp: 0
+  File::Slurp: 9999.14
   Path::Class: 0
   Test::More: 0
 configure_requires:
@@ -30,4 +30,4 @@ resources:
   homepage: http://github.com/trinitum/perl-File-Flock-Tiny
   license: http://dev.perl.org/licenses/
   repository: git://github.com/trinitum/perl-File-Flock-Tiny
-version: 0.07
+version: 0.08
