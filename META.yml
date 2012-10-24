@@ -29,4 +29,4 @@ resources:
   homepage: https://github.com/trinitum/perl-File-Flock-Tiny
   license: http://dev.perl.org/licenses/
   repository: git://github.com/trinitum/perl-File-Flock-Tiny
-version: 0.12
+version: 0.13

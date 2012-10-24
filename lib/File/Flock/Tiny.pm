@@ -13,7 +13,7 @@ File::Flock::Tiny - yet another flock package
 
 =cut
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 $VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
@@ -59,8 +59,8 @@ sub lock {
 
 =head2 File::Flock::Tiny->trylock($file)
 
-Same as I<lock>, but if the I<$file> has been already locked, immediately
-returns undef.
+Same as I<lock>, but doesn't block and returns immediately, if the lock can not
+be acquired returns undef.
 
 =cut
 
@@ -72,7 +72,6 @@ sub trylock {
 }
 
 =head2 File::Flock::Tiny->write_pid($file)
-X<write_pid>
 
 Try to lock the file and save the process ID into it. Returns the lock object,
 or undef if the file was already locked. The lock returned by I<write_pid> will
@@ -95,12 +94,40 @@ use Fcntl qw(:flock);
 
 =head1 LOCK OBJECT METHODS
 
+Here is the list of methods that you can invoke on a lock object.
+
 =head2 $lock->write_pid
 
 Truncates locked file and saves PID into it. Also marks the lock object as tied
 to the current process, so it only will be automatically released when goes out
 of scope in the current process but not in any of the child processes created
-after this call.
+after this call. This method may be used to create pid files for daemons, you
+can lock file in parent process to ensure that there is no another copy of the
+daemon running already, and then fork and write pid of the child into the file.
+Here is the simplified example of daemonizing code:
+
+    my $pid = File::Flock::Tiny->trylock('daemon.pid')
+      or die "Daemon already running";
+    if ( fork == 0 ) {
+        setsid;
+        if (fork) {
+            # intermediate process
+            $pid->close;
+            exit 0;
+        }
+    }
+    else {
+        # parent process
+        $pid->close;
+        exit 0;
+    }
+    # daemon process
+    # perhaps you want to close all opened files here, do not close $pid!
+    $pid->write_pid;
+
+It is importand to remember to close the lock file in the parent and
+intermediate processes, otherwise the lock will be released during destruction
+of the variable.
 
 =cut
 
@@ -115,7 +142,7 @@ sub write_pid {
 
 =head2 $lock->release
 
-Unlock file
+Release lock and close the file
 
 =cut
 
